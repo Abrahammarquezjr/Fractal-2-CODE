@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SACRED FRACTALS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --bg: #04020a;
+  --surface: #080516;
+  --surface2: #0d0820;
+  --border: rgba(120,40,255,0.2);
+  --border-bright: rgba(180,80,255,0.5);
+  --accent: #b400ff;
+  --accent2: #ff006e;
+  --accent3: #00ffcc;
+  --accent4: #ff8800;
+  --text: #d8c8f0;
+  --text-dim: #6a5080;
+  --glow-purple: rgba(180,0,255,0.4);
+  --glow-pink: rgba(255,0,110,0.4);
+  --glow-cyan: rgba(0,255,204,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* Animated bg grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(120,40,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,40,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridShift 20s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(120,0,255,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,0,110,0.05) 0%, transparent 50%),
+              radial-gradient(ellipse 40% 60% at 10% 60%, rgba(0,255,204,0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes gridShift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 40px 40px, 40px 40px; }
+}
+
+/* ─── HEADER ─────────────────────────────────────── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px;
+  background: rgba(4,2,10,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: 1.15em;
+  letter-spacing: 6px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: logoFlow 4s linear infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(180,0,255,0.5));
+}
+
+@keyframes logoFlow {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.header-badge {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.badge {
+  font-size: 0.6em;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.badge::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent3);
+  box-shadow: 0 0 8px var(--accent3), 0 0 16px var(--accent3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
+/* ─── MAIN LAYOUT ─────────────────────────────────── */
+.main-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* ─── CANVAS STAGE ─────────────────────────────────── */
+.stage-wrap {
+  position: relative;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--border-bright);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.8),
+    0 0 40px var(--glow-purple),
+    0 0 80px rgba(120,0,255,0.15),
+    inset 0 0 40px rgba(0,0,0,0.5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(180,0,255,0.05) 0%, transparent 50%, rgba(255,0,110,0.05) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+canvas#main {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Corner decorations */
+.corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  z-index: 3;
+  pointer-events: none;
+}
+.corner-tl { top: -1px; left: -1px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); box-shadow: -4px -4px 12px var(--glow-purple); }
+.corner-tr { top: -1px; right: -1px; border-top: 2px solid var(--accent2); border-right: 2px solid var(--accent2); box-shadow: 4px -4px 12px var(--glow-pink); }
+.corner-bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--accent2); border-left: 2px solid var(--accent2); box-shadow: -4px 4px 12px var(--glow-pink); }
+.corner-br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); box-shadow: 4px 4px 12px var(--glow-purple); }
+
+/* Stage overlays */
+.stage-meta {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  background: linear-gradient(transparent, rgba(4,2,10,0.8));
+  z-index: 3;
+  pointer-events: none;
+}
+
+.stage-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: rgba(216,200,240,0.9);
+  text-shadow: 0 0 20px rgba(180,0,255,0.8);
+}
+
+.stage-counter {
+  font-size: 0.6em;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  font-family: 'Orbitron', monospace;
+}
+
+.direction-indicator {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 3;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.58em;
+  letter-spacing: 2px;
+}
+
+.dir-label {
+  color: var(--text-dim);
+}
+
+.dir-arrow {
+  font-size: 1.1em;
+  transition: all 0.3s;
+}
+
+.dir-arrow.forward { color: var(--accent3); text-shadow: 0 0 8px var(--accent3); }
+.dir-arrow.reverse { color: var(--accent2); text-shadow: 0 0 8px var(--accent2); }
+
+.t-display {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 3;
+  pointer-events: none;
+  font-size: 0.55em;
+  letter-spacing: 2px;
+  color: rgba(100,80,130,0.7);
+  font-family: 'Orbitron', monospace;
+}
+
+/* ─── CONTROLS PANEL ─────────────────────────────── */
+.controls-panel {
+  margin-top: 16px;
+  background: rgba(8,5,22,0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 30px rgba(120,0,255,0.1);
+}
+
+/* Transport Row */
+.transport-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 1px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  padding: 1px;
+}
+
+.ctrl-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ctrl-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.ctrl-btn:hover {
+  color: var(--text);
+}
+
+.ctrl-btn:hover::before {
+  background: rgba(180,0,255,0.12);
+}
+
+.ctrl-btn.active {
+  color: var(--accent);
+  background: rgba(180,0,255,0.1);
+}
+
+.ctrl-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.ctrl-btn.play-btn.active {
+  color: var(--accent3);
+  background: rgba(0,255,204,0.08);
+}
+.ctrl-btn.play-btn.active::after { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+.ctrl-btn.rev-btn.active {
+  color: var(--accent2);
+  background: rgba(255,0,110,0.08);
+}
+.ctrl-btn.rev-btn.active::after { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+
+.btn-icon {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Nav Buttons */
+.nav-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 16px var(--glow-purple);
+}
+
+/* Sliders Row */
+.sliders-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slider-label {
+  font-size: 0.55em;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  font-family: 'Orbitron', monospace;
+}
+
+.slider-val {
+  font-size: 0.6em;
+  letter-spacing: 2px;
+  font-family: 'Orbitron', monospace;
+  color: var(--accent);
+}
+
+.slider-track {
+  position: relative;
+  height: 4px;
+  background: rgba(120,40,255,0.15);
+  border-radius: 2px;
+  border: 1px solid rgba(120,40,255,0.2);
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--glow-purple);
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px rgba(180,0,255,0.2), 0 0 12px var(--glow-purple);
+  cursor: pointer;
+  margin-top: -6px;
+  transition: box-shadow 0.2s;
+}
+
+input[type=range]::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 5px rgba(180,0,255,0.3), 0 0 20px var(--glow-purple);
+}
+
+#speedSlider::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, var(--accent), var(--accent3));
+}
+#speedSlider::-webkit-slider-thumb {
+  border-color: var(--accent3);
+  box-shadow: 0 0 0 3px rgba(0,255,204,0.2), 0 0 12px var(--glow-cyan);
+}
+
+.slider-val#speedVal { color: var(--accent3); }
+
+/* ─── GALLERY ─────────────────────────────────────── */
+.gallery-section {
+  margin-top: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6em;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.thumb {
+  aspect-ratio: 1;
+  cursor: pointer;
+  position: relative;
+  border: 1px solid rgba(120,40,255,0.15);
+  border-radius: 3px;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(4,2,10,0.3);
+  transition: background 0.2s;
+}
+
+.thumb:hover {
+  border-color: rgba(180,0,255,0.6);
+  box-shadow: 0 0 16px rgba(180,0,255,0.3), 0 0 4px rgba(180,0,255,0.5) inset;
+  transform: translateY(-2px);
+}
+
+.thumb:hover::after {
+  background: rgba(4,2,10,0);
+}
+
+.thumb.active {
+  border-color: var(--accent2);
+  box-shadow: 0 0 20px rgba(255,0,110,0.4), 0 0 6px rgba(255,0,110,0.3) inset;
+}
+
+.thumb.active::after {
+  background: rgba(4,2,10,0);
+}
+
+.thumb canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.thumb-label {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(4,2,10,0.92));
+  font-size: 0.42em;
+  letter-spacing: 1px;
+  color: rgba(180,140,220,0.8);
+  padding: 10px 4px 4px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 1;
+  font-family: 'Orbitron', monospace;
+}
+
+/* ─── CODE SECTION ─────────────────────────────────── */
+.code-section {
+  margin-top: 20px;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(13,8,32,0.9);
+  border: 1px solid var(--border);
+  border-bottom: 1px solid rgba(120,40,255,0.1);
+  border-radius: 4px 4px 0 0;
+}
+
+.code-title {
+  font-size: 0.58em;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  font-family: 'Orbitron', monospace;
+}
+
+.copy-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px var(--glow-purple);
+}
+
+.copy-btn.copied {
+  border-color: var(--accent3);
+  color: var(--accent3);
+  box-shadow: 0 0 12px var(--glow-cyan);
+}
+
+pre {
+  background: rgba(4,2,10,0.95);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  padding: 20px;
+  overflow-x: auto;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65em;
+  line-height: 1.8;
+  color: #6a5080;
+  max-height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180,0,255,0.3) transparent;
+}
+
+pre::-webkit-scrollbar { width: 4px; height: 4px; }
+pre::-webkit-scrollbar-track { background: transparent; }
+pre::-webkit-scrollbar-thumb { background: rgba(180,0,255,0.3); border-radius: 2px; }
+
+pre .kw  { color: #c040ff; }
+pre .fn  { color: #ff8844; }
+pre .str { color: #66ffaa; }
+pre .cm  { color: rgba(120,80,160,0.6); font-style: italic; }
+pre .num { color: #ff4488; }
+
+/* ─── FOOTER ─────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 30px 0 40px;
+  font-size: 0.55em;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  font-family: 'Orbitron', monospace;
+}
+
+/* ─── SCROLLBAR ─────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(180,0,255,0.3); border-radius: 3px; }
+
+/* ─── SELECTION HIGHLIGHT ────────────────────────── */
+::selection {
+  background: rgba(180,0,255,0.3);
+  color: #fff;
+}
+
+/* ─── SCANLINES OVERLAY ──────────────────────────── */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+}
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<header>
+  <div class="logo">SACRED·FRACTALS</div>
+  <div class="header-badge">
+    <div class="badge">20 PIECES</div>
+    <div class="badge">REAL-TIME</div>
+    <div class="status-dot"></div>
+  </div>
+</header>
+
+<div class="main-wrap">
+
+  <!-- Stage -->
+  <div class="stage-wrap">
+    <div class="stage">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <canvas id="main" width="900" height="900"></canvas>
+      <div class="direction-indicator">
+        <span class="dir-label">DIR</span>
+        <span class="dir-arrow forward" id="dirArrow">▶▶</span>
+      </div>
+      <div class="t-display" id="tDisplay">T:0.000</div>
+      <div class="stage-meta">
+        <div class="stage-name" id="stageName">ORBITAL RINGS</div>
+        <div class="stage-counter" id="stageNum">01 / 20</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls Panel -->
+  <div class="controls-panel">
+
+    <!-- Transport -->
+    <div class="transport-row">
+      <button class="nav-btn" id="btnPrev" title="Previous">
+        <span>◀◀</span> PREV
+      </button>
+
+      <div class="btn-group">
+        <button class="ctrl-btn play-btn active" id="btnPlay" title="Play/Pause">
+          <span class="btn-icon">⏸</span> <span id="playLabel">PAUSE</span>
+        </button>
+        <button class="ctrl-btn rev-btn" id="btnReverse" title="Reverse">
+          <span class="btn-icon">⟳</span> <span id="revLabel">REVERSE</span>
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="ctrl-btn" id="btnReset" title="Reset time to 0" style="border:1px solid var(--border); border-radius:3px;">
+        <span class="btn-icon">⟲</span> RESET
+      </button>
+
+      <button class="nav-btn" id="btnNext" title="Next" style="margin-left:auto;">
+        NEXT <span>▶▶</span>
+      </button>
+    </div>
+
+    <!-- Sliders -->
+    <div class="sliders-row">
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">SPEED</span>
+          <span class="slider-val" id="speedVal">20%</span>
+        </div>
+        <input type="range" id="speedSlider" min="1" max="200" value="20">
+      </div>
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-label">BRIGHTNESS</span>
+          <span class="slider-val" id="brightVal" style="color:var(--accent4);">100%</span>
+        </div>
+        <input type="range" id="brightSlider" min="20" max="200" value="100" style="--c:var(--accent4);">
+      </div>
+    </div>
+
+    <!-- Quality Row -->
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <span style="font-family:'Orbitron',monospace; font-size:0.55em; letter-spacing:3px; color:var(--text-dim);">RESOLUTION</span>
+      <div class="btn-group" id="qualityGroup">
+        <button class="ctrl-btn qual-btn" data-res="380">LOW<span style="opacity:0.5; font-size:0.85em; margin-left:4px;">380p</span></button>
+        <button class="ctrl-btn qual-btn" data-res="600">MED<span style="opacity:0.5; font-size:0.85em; margin-left:4px;">600p</span></button>
+        <button class="ctrl-btn qual-btn active" data-res="900">HIGH<span style="opacity:0.5; font-size:0.85em; margin-left:4px;">900p</span></button>
+        <button class="ctrl-btn qual-btn" data-res="1200">ULTRA<span style="opacity:0.5; font-size:0.85em; margin-left:4px;">1200p</span></button>
+      </div>
+      <span style="font-family:'Orbitron',monospace; font-size:0.5em; letter-spacing:2px; color:var(--text-dim); margin-left:4px;" id="renderNote">⚠ ULTRA may slow on older devices</span>
+    </div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="gallery-section">
+    <div class="section-header">
+      <div class="section-title">SELECT FRACTAL</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <!-- Code -->
+  <div class="code-section">
+    <div class="code-header">
+      <span class="code-title" id="codeTitle">// PIECE 01 — ORBITAL RINGS · SOURCE</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyCode()">COPY CODE</button>
+    </div>
+    <pre id="codeBlock"></pre>
+  </div>
+
+  <footer>SACRED FRACTAL ENGINE · MATH RENDERED IN REAL-TIME · NO SERVER REQUIRED</footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// MATH CORE
+// ═══════════════════════════════════════════════════════
+function norm(arr) {
+  let mn=Infinity, mx=-Infinity;
+  for (let v of arr) { if(v<mn)mn=v; if(v>mx)mx=v; }
+  const rng=mx-mn||1;
+  return arr.map(v=>(v-mn)/rng);
+}
+
+function multiBand(arr, freqs) {
+  const out=new Float32Array(arr.length);
+  let totalW=0;
+  freqs.forEach((f,i)=>{
+    const w=Math.pow(0.5,i); totalW+=w;
+    for(let j=0;j<arr.length;j++)
+      out[j]+=(Math.sin(arr[j]*Math.PI*f)*0.5+0.5)*w;
+  });
+  for(let j=0;j<out.length;j++) out[j]/=totalW;
+  return norm(Array.from(out));
+}
+
+// ═══════════════════════════════════════════════════════
+// PALETTES
+// ═══════════════════════════════════════════════════════
+const PALETTES = {
+  electric_blue: t => [Math.pow(Math.sin(t*Math.PI*4+3.5),2)*0.5,Math.pow(Math.sin(t*Math.PI*5+2.5),2)*0.4,Math.pow(Math.abs(Math.sin(t*Math.PI*3+0.5)),0.6)],
+  lava: t => [Math.pow(t,0.4),Math.pow(Math.sin(t*Math.PI*3),2)*0.6,Math.pow(Math.sin(t*Math.PI*7+Math.PI),2)*0.3],
+  aurora: t => [Math.pow(Math.sin(t*Math.PI*2+4.0),2)*0.6,Math.pow(Math.abs(Math.sin(t*Math.PI*3+1.0)),0.7),Math.pow(Math.abs(Math.sin(t*Math.PI*2.5+2.5)),0.5)],
+  toxic: t => [Math.pow(Math.sin(t*Math.PI*4+2.0),2)*0.4,Math.pow(t,0.35),Math.pow(Math.sin(t*Math.PI*6+1.0),2)*0.35],
+  cosmic: t => {
+    const h=(t*3.0)%1.0,i=Math.floor(h*6)%6,f=h*6-Math.floor(h*6),q=1-f;
+    const tb=[[1,f,0],[q,1,0],[0,1,f],[0,q,1],[f,0,1],[1,0,q]];
+    const [r,g,b]=tb[i];
+    const lum=Math.pow(0.299*r+0.587*g+0.114*b+1e-8,0.5);
+    return [r*lum,g*lum,b*lum];
+  },
+  violet_gold: t => [Math.min(1,Math.pow(Math.sin(t*Math.PI*3+0.5),2)*0.9+t*0.2),Math.pow(Math.sin(t*Math.PI*4+2.0),2)*0.5,Math.pow(Math.abs(Math.sin(t*Math.PI*2+1.0)),0.5)],
+  blood_neon: t => [Math.pow(t,0.45),Math.pow(Math.sin(t*Math.PI*5+2.0),2)*0.25,Math.pow(Math.sin(t*Math.PI*4+4.0),2)*0.5],
+  ice_mint: t => [Math.pow(Math.sin(t*Math.PI*3+4.0),2)*0.35,Math.pow(Math.abs(Math.sin(t*Math.PI*2+0.5)),0.55),Math.pow(Math.abs(Math.sin(t*Math.PI*2.5+1.0)),0.5)],
+  solar: t => [Math.pow(Math.abs(Math.sin(t*Math.PI*1.5)),0.5),Math.pow(Math.sin(t*Math.PI*2+0.5),2)*0.75,Math.pow(Math.sin(t*Math.PI*4+3.0),2)*0.2],
+  deep_violet: t => [Math.pow(Math.sin(t*Math.PI*4+1.5),2)*0.75,Math.pow(Math.sin(t*Math.PI*5+3.0),2)*0.2,Math.pow(Math.abs(Math.sin(t*Math.PI*2.5+0.8)),0.55)]
+};
+
+// ═══════════════════════════════════════════════════════
+// 20 FRACTAL PIECES
+// ═══════════════════════════════════════════════════════
+const PIECES = [
+  { name:"ORBITAL RINGS", palette:"electric_blue", freqs:[4,8,16],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); let z=Math.sin(r*18+t*0.8)*0.4; z+=Math.sin(r*9+th*6+t*0.5)*0.4; z+=Math.cos(r*6-th*9-t*0.3)*0.3; const petal=Math.cos(th*7)*Math.exp(-Math.pow(r-1.2,2)*3); z+=petal*0.5; const wx=x+Math.sin(z*Math.PI+y*2)*0.25,wy=y+Math.cos(z*Math.PI+x*2)*0.25; const rw=Math.sqrt(wx*wx+wy*wy),tw=Math.atan2(wy,wx); z+=Math.sin(rw*12+tw*6+t*0.6)*0.3; return z; }},
+  { name:"SPIRAL GALAXY", palette:"cosmic", freqs:[3,6,12,24],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y)+0.001,th=Math.atan2(y,x); const spiral=Math.sin(3*th+6*Math.log(r+0.3)*3+t*0.4)*Math.exp(-r*0.4); let z=spiral*0.6; z+=Math.sin(r*14+3*th+t*0.7)*0.25*Math.exp(-r*0.3); z+=Math.cos(r*7-3*th*2-t*0.5)*0.25; z+=Math.exp(-r*3)*0.4; const wx=x+Math.sin(z*Math.PI+y*2)*0.35,wy=y+Math.cos(z*Math.PI+x*2)*0.35; const rw=Math.sqrt(wx*wx+wy*wy)+0.001,tw=Math.atan2(wy,wx); z+=Math.sin(3*tw+5*Math.log(rw+0.3)*3+t*0.4)*0.25*Math.exp(-rw*0.3); return z; }},
+  { name:"MANDALA BLOOM", palette:"aurora", freqs:[4,8,16,32],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); const rose=Math.cos(8*th+t*0.15); let z=Math.sin((r-Math.abs(rose)*0.8)*20+t*0.6)*Math.exp(-r*0.5)*0.5; z+=Math.cos(8*th+r*10+t*0.4)*Math.exp(-r*0.35)*0.4; z+=Math.sin(16*th+r*5-t*0.3)*0.25; z+=Math.sin(r*22+t*0.9)*0.2*Math.exp(-r*0.4); return z; }},
+  { name:"INTERFERENCE WEB", palette:"lava", freqs:[3,6,12],
+    sources:[[-0.8,0],[0.8,0],[0,-0.8],[0,0.8],[-0.5,-0.7],[0.5,0.7],[-0.5,0.7],[0.5,-0.7]],
+    field:function(x,y,t){ let z=0; for(const[sx,sy]of this.sources){const d=Math.sqrt((x-sx)**2+(y-sy)**2);z+=Math.sin(d*22+t*0.7)*Math.exp(-d*0.6);} const wx=x+Math.sin(z*0.4*Math.PI+y*2)*0.3,wy=y+Math.cos(z*0.4*Math.PI+x*2)*0.3; const r=Math.sqrt(wx*wx+wy*wy),th=Math.atan2(wy,wx); z+=Math.sin(r*12+th*5+t*0.5)*0.25; return z; }},
+  { name:"VORTEX FIELD", palette:"violet_gold", freqs:[4,8,16],
+    vortices:[[-0.6,0.4,1],[0.7,-0.3,-1],[0.0,0.8,1],[-0.4,-0.7,-1]],
+    field:function(x,y,t){ let z=0; for(const[vx,vy,spin]of this.vortices){const dx=x-vx,dy=y-vy;const vr=Math.sqrt(dx*dx+dy*dy)+0.01;const va=Math.atan2(dy,dx);z+=Math.sin(vr*14+spin*va*4+t*0.6)*Math.exp(-vr*1.2)*0.4;} const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); z+=Math.sin(th*5+r*8+t*0.4)*0.3*Math.exp(-r*0.3); const wx=x+Math.sin(z*Math.PI+y*2)*0.5,wy=y+Math.cos(z*Math.PI+x*2)*0.5; const rw=Math.sqrt(wx*wx+wy*wy),tw=Math.atan2(wy,wx); z+=Math.sin(rw*10+tw*7+t*0.5)*0.25; return z; }},
+  { name:"QUASICRYSTAL", palette:"toxic", freqs:[4,8,16],
+    field:(x,y,t)=>{ let z=0; for(let k=0;k<5;k++){const a=k*Math.PI*2/5;z+=Math.cos(x*Math.cos(a)*9+y*Math.sin(a)*9+t*0.3);} z/=5; const r=Math.sqrt(x*x+y*y); z+=Math.sin(r*15+t*0.8)*0.3*Math.exp(-r*0.3); const wx=x+Math.sin(z*Math.PI+y*2)*0.4,wy=y+Math.cos(z*Math.PI+x*2)*0.4; let zw=0; for(let k=0;k<5;k++){const a=k*Math.PI*2/5;zw+=Math.cos(wx*Math.cos(a)*6+wy*Math.sin(a)*6+t*0.25);} return z*0.5+(zw/5)*0.5; }},
+  { name:"CELTIC KNOT", palette:"aurora", freqs:[4,8,16,32],
+    field:(x,y,t)=>{ let z=Math.sin(x*8+Math.sin(y*8+t*0.5)*1.5)*0.4; z+=Math.sin(y*8+Math.sin(x*8+t*0.4)*1.5)*0.4; z+=Math.cos((x+y)*7+t*0.3)*Math.cos((x-y)*7)*0.3; const r=Math.sqrt(x*x+y*y); z*=(Math.exp(-r*0.5)*0.5+0.5); z+=Math.sin(r*16+Math.atan2(y,x)*8+t*0.6)*0.2; const wx=x+Math.sin(z*Math.PI+y*2)*0.35,wy=y+Math.cos(z*Math.PI+x*2)*0.35; z+=Math.sin(wx*8+Math.sin(wy*8)*1.5)*0.2; return z; }},
+  { name:"NEBULA CORE", palette:"cosmic", freqs:[3,6,12],
+    field:(x,y,t)=>{ let z=0,amp=1,freq=1; for(let o=0;o<6;o++){z+=Math.sin(x*freq*3.7+y*freq*2.9+t*0.2*freq)*amp;z+=Math.cos(x*freq*2.9-y*freq*3.7-t*0.15*freq)*amp;amp*=0.52;freq*=2.07;} const wx=x+Math.sin(((z+8)/16)*Math.PI+y*2)*0.5,wy=y+Math.cos(((z+8)/16)*Math.PI+x*2)*0.5; let zw=0;amp=1;freq=1; for(let o=0;o<4;o++){zw+=Math.sin(wx*freq*3.7+wy*freq*2.9+t*0.18*freq)*amp;amp*=0.5;freq*=2.1;} const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); return z*0.5+zw*0.5+Math.sin(r*12+th*5+t*0.4)*0.2; }},
+  { name:"PRISM CATHEDRAL", palette:"violet_gold", freqs:[4,8,16,32],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); let z=Math.sin(12*th+t*0.15)*0.4; z+=Math.sin(r*20+t*0.8)*0.4; z+=Math.cos(12*th+r*10+t*0.4)*0.25; z+=Math.sin(24*th+t*0.1)*Math.sin(r*8)*0.2; z+=Math.sin(x*15+t*0.5)*Math.sin(y*15)*0.15; const wx=x+Math.sin(z*0.5*Math.PI+y*2)*0.25,wy=y+Math.cos(z*0.5*Math.PI+x*2)*0.25; const rw=Math.sqrt(wx*wx+wy*wy),tw=Math.atan2(wy,wx); z+=Math.sin(12*tw+rw*12+t*0.5)*0.2; return z; }},
+  { name:"JULIA BLOOMS", palette:"electric_blue", freqs:[2,4,8],
+    field:(x,y,t)=>{ const cx=-0.7+Math.sin(t*0.08)*0.05,cy=0.27+Math.cos(t*0.06)*0.04; let zr=x*0.8,zi=y*0.8,smooth=0; for(let i=0;i<40;i++){const zr2=zr*zr-zi*zi+cx,zi2=2*zr*zi+cy;const mag=zr2*zr2+zi2*zi2;if(mag>10){smooth=i+1-Math.log2(Math.log2(Math.max(mag,1.01+1e-9)));break;}zr=zr2;zi=zi2;} return smooth; }},
+  { name:"SATURN HALOS", palette:"ice_mint", freqs:[5,10,20],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); let z=Math.sin(r*25+t*0.9)*0.5; z+=Math.sin(r*12.5-th*3+t*0.4)*0.35; z+=Math.cos(r*6.25+th*6+t*0.3)*0.25; z+=Math.exp(-Math.abs(r-1.0)*8)*0.4; z+=Math.exp(-Math.abs(r-1.6)*8)*0.3; z+=Math.exp(-Math.abs(r-0.5)*10)*0.2; const wx=x+Math.sin(th*2+t*0.2)*0.2,wy=y+Math.cos(th*2+t*0.2)*0.2; const rw=Math.sqrt(wx*wx+wy*wy); z+=Math.sin(rw*20+t*0.7)*0.2; return z; }},
+  { name:"TYPHOON EYE", palette:"deep_violet", freqs:[4,8,16],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y)+0.001,th=Math.atan2(y,x); const swirl=th+r*3.0; let z=Math.sin(swirl*4+t*0.5)*Math.exp(-r*0.4)*0.5; z+=Math.cos(swirl*8-t*0.4)*Math.exp(-r*0.6)*0.4; z+=Math.sin(r*20+t*0.9)*0.25*Math.exp(-r*0.3); z+=Math.exp(-r*5)*Math.cos(swirl*12+t*1.2)*0.4; const wx=x+Math.sin(z*Math.PI)*0.4,wy=y+Math.cos(z*Math.PI)*0.4; const rw=Math.sqrt(wx*wx+wy*wy),tw=Math.atan2(wy,wx); z+=Math.sin(tw*6+rw*12+t*0.6)*0.25; return z; }},
+  { name:"OCEAN CAUSTICS", palette:"ice_mint", freqs:[4,8,16],
+    field:(x,y,t)=>{ let z=Math.sin(x*8+t*0.7)*0.3+Math.sin(y*10-t*0.6)*0.3; z+=Math.sin((x*0.7+y*0.7)*10+t*0.5)*0.25; z+=Math.sin((x*0.7-y*0.7)*8-t*0.4)*0.25; const wx=x+z*0.5+Math.sin(t*0.3)*0.1,wy=y+z*0.45+Math.cos(t*0.25)*0.1; z=Math.sin(wx*10+t*0.6)*0.3; z+=Math.cos(wy*8-t*0.5)*0.3; z+=Math.sin(Math.sqrt(wx*wx+wy*wy)*16+t*0.7)*0.25; z+=Math.sin(wx*6-wy*8+t*0.4)*0.2; return z; }},
+  { name:"ROSE MANDALA", palette:"blood_neon", freqs:[4,8,16],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); const rose=Math.cos(5*th+t*0.1); let z=Math.sin((r-Math.abs(rose)*0.9)*22+t*0.7)*Math.exp(-r*0.45)*0.55; z+=Math.cos(5*th+r*12-t*0.5)*Math.exp(-r*0.3)*0.4; z+=Math.sin(10*th+r*6+t*0.3)*0.3; z+=Math.sin(r*18+t*0.8)*0.2*Math.exp(-r*0.4); const wx=x+Math.sin(z*Math.PI)*0.3,wy=y+Math.cos(z*Math.PI)*0.3; z+=Math.sin(Math.sqrt(wx*wx+wy*wy)*14+Math.atan2(wy,wx)*5+t*0.5)*0.2; return z; }},
+  { name:"CRYSTAL LATTICE", palette:"solar", freqs:[4,8,16],
+    field:(x,y,t)=>{ let z=Math.sin(x*12+t*0.3)*0.3+Math.sin(y*12-t*0.25)*0.3; z+=Math.cos((x+y)*10+t*0.2)*0.25+Math.cos((x-y)*10-t*0.2)*0.25; z+=Math.sin(x*8+y*6+t*0.35)*0.2; const r=Math.sqrt(x*x+y*y); z*=(Math.exp(-r*0.3)+0.2); const wx=x+Math.sin(z*Math.PI)*0.4,wy=y+Math.cos(z*Math.PI)*0.4; z+=Math.sin(wx*12+t*0.28)*0.2+Math.cos(wy*12-t*0.22)*0.2; z+=Math.sin((wx+wy)*8+t*0.18)*0.15; return z; }},
+  { name:"JULIA DRAGON", palette:"blood_neon", freqs:[2,4,8],
+    field:(x,y,t)=>{ const cx=-0.8+Math.sin(t*0.07)*0.06,cy=0.156+Math.cos(t*0.05)*0.04; let zr=x*0.9,zi=y*0.9,smooth=0; for(let i=0;i<50;i++){const zr2=zr*zr-zi*zi+cx,zi2=2*zr*zi+cy;const mag=zr2*zr2+zi2*zi2;if(mag>10){smooth=i+1-Math.log2(Math.log2(Math.max(mag,1.01+1e-9)));break;}zr=zr2;zi=zi2;} return smooth; }},
+  { name:"7-FOLD CRYSTAL", palette:"toxic", freqs:[4,8,16],
+    field:(x,y,t)=>{ let z=0; for(let k=0;k<7;k++){const a=k*Math.PI*2/7+t*0.03;z+=Math.cos(x*Math.cos(a)*8+y*Math.sin(a)*8);} z/=7; const r=Math.sqrt(x*x+y*y); z+=Math.sin(r*18+t*0.7)*0.2*Math.exp(-r*0.3); const wx=x+Math.sin(z*Math.PI)*0.35,wy=y+Math.cos(z*Math.PI)*0.35; let zw=0; for(let k=0;k<7;k++){const a=k*Math.PI*2/7;zw+=Math.cos(wx*Math.cos(a)*5+wy*Math.sin(a)*5);} return z*0.5+(zw/7)*0.5; }},
+  { name:"GALACTIC ARMS", palette:"cosmic", freqs:[3,6,12],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y)+0.001,th=Math.atan2(y,x); let z=Math.sin(3*th+5*Math.log(r+0.3)*3+t*0.4)*Math.exp(-r*0.2)*0.5; z+=Math.cos(3*th-5*Math.log(r+0.3)*3-t*0.35)*Math.exp(-r*0.2)*0.35; z+=Math.sin(r*12+th*3+t*0.5)*0.3; z+=Math.sin(r*22+t*0.8)*0.2*Math.exp(-r*0.4); const wx=x+Math.sin(z*Math.PI+y*2)*0.4,wy=y+Math.cos(z*Math.PI+x*2)*0.4; const rw=Math.sqrt(wx*wx+wy*wy)+0.001,tw=Math.atan2(wy,wx); z+=Math.sin(3*tw+4*Math.log(rw+0.3)*3+t*0.38)*0.25*Math.exp(-rw*0.25); return z; }},
+  { name:"PULSAR RINGS", palette:"electric_blue", freqs:[4,8,16,32],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y),th=Math.atan2(y,x); const pulse=Math.sin(r*30-t*2.0)*Math.exp(-r*0.4); let z=pulse*0.5; z+=Math.sin(th*4+r*10+t*0.5)*0.3*Math.exp(-r*0.3); z+=Math.cos(r*15+t*1.2)*0.25; z+=Math.sin(th*8-r*5-t*0.6)*0.2*Math.exp(-r*0.5); const wx=x+Math.sin(z*Math.PI+y*2)*0.3,wy=y+Math.cos(z*Math.PI+x*2)*0.3; const rw=Math.sqrt(wx*wx+wy*wy); z+=Math.sin(rw*25-t*1.8)*0.2*Math.exp(-rw*0.4); return z; }},
+  { name:"HYPNOTIC COIL", palette:"aurora", freqs:[4,8,16],
+    field:(x,y,t)=>{ const r=Math.sqrt(x*x+y*y)+0.001,th=Math.atan2(y,x); const spiral=th/(2*Math.PI)+r; let z=Math.sin(spiral*28+t*0.7)*0.5; z+=Math.cos(spiral*14-t*0.5)*0.4; z+=Math.sin(r*24+t*0.9)*0.25; const wx=x+Math.sin(th*4+t*0.3)*0.35,wy=y+Math.cos(th*4+t*0.3)*0.35; const rw=Math.sqrt(wx*wx+wy*wy)+0.001; const spiralw=Math.atan2(wy,wx)/(2*Math.PI)+rw; z+=Math.sin(spiralw*20+t*0.65)*0.25; return z; }}
+];
+
+// ═══════════════════════════════════════════════════════
+// RENDERER
+// ═══════════════════════════════════════════════════════
+const QUALITY_PRESETS = { LOW: 380, MED: 600, HIGH: 900, ULTRA: 1200 };
+let RES = 900;
+const EXTENT = 2.2;
+let brightness = 1.0;
+
+function renderFrame(ctx, piece, t, res) {
+  const W=res, H=res;
+  const imgData=ctx.createImageData(W,H);
+  const data=imgData.data;
+  const vals=new Float32Array(W*H);
+  for(let py=0;py<H;py++){
+    for(let px=0;px<W;px++){
+      const x=(px/(W-1))*2*EXTENT-EXTENT;
+      const y=(py/(H-1))*2*EXTENT-EXTENT;
+      vals[py*W+px]=piece.field(x,y,t);
+    }
+  }
+  const normed=multiBand(Array.from(vals),piece.freqs);
+  const palFn=PALETTES[piece.palette];
+  for(let i=0;i<W*H;i++){
+    const [r,g,b]=palFn(normed[i]);
+    data[i*4]=Math.min(255,r*255*brightness);
+    data[i*4+1]=Math.min(255,g*255*brightness);
+    data[i*4+2]=Math.min(255,b*255*brightness);
+    data[i*4+3]=255;
+  }
+  ctx.putImageData(imgData,0,0);
+}
+
+// ═══════════════════════════════════════════════════════
+// THUMBNAILS
+// ═══════════════════════════════════════════════════════
+const THUMB_RES=80;
+const thumbCanvases=[];
+
+function renderThumb(idx) {
+  const c=thumbCanvases[idx];
+  const ctx=c.getContext('2d');
+  renderFrame(ctx,PIECES[idx],0,THUMB_RES);
+}
+
+function buildGallery() {
+  const gallery=document.getElementById('gallery');
+  PIECES.forEach((p,i)=>{
+    const wrap=document.createElement('div');
+    wrap.className='thumb'+(i===0?' active':'');
+    wrap.onclick=()=>selectPiece(i);
+    const c=document.createElement('canvas');
+    c.width=THUMB_RES; c.height=THUMB_RES;
+    thumbCanvases.push(c);
+    wrap.appendChild(c);
+    const lbl=document.createElement('div');
+    lbl.className='thumb-label';
+    lbl.textContent=p.name;
+    wrap.appendChild(lbl);
+    gallery.appendChild(wrap);
+    setTimeout(()=>renderThumb(i), i*80);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// ANIMATION STATE
+// ═══════════════════════════════════════════════════════
+const mainCanvas=document.getElementById('main');
+const mainCtx=mainCanvas.getContext('2d');
+let currentIdx=0;
+let t=0;
+let playing=true;
+let reversed=false;
+let speedMult=0.20;
+let lastTimestamp=null;
+
+function updateDirectionIndicator() {
+  const arrow=document.getElementById('dirArrow');
+  if(reversed){
+    arrow.textContent='◀◀';
+    arrow.className='dir-arrow reverse';
+  } else {
+    arrow.textContent='▶▶';
+    arrow.className='dir-arrow forward';
+  }
+}
+
+function selectPiece(idx) {
+  currentIdx=idx;
+  document.getElementById('stageName').textContent=PIECES[idx].name;
+  document.getElementById('stageNum').textContent=String(idx+1).padStart(2,'0')+' / '+PIECES.length;
+  document.getElementById('codeTitle').textContent='// PIECE '+String(idx+1).padStart(2,'0')+' — '+PIECES[idx].name+' · SOURCE';
+  document.querySelectorAll('.thumb').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  showCode(idx);
+  if(!playing) renderFrame(mainCtx,PIECES[currentIdx],t,RES);
+}
+
+function animate(ts) {
+  if(!lastTimestamp) lastTimestamp=ts;
+  const dt=(ts-lastTimestamp)/1000;
+  lastTimestamp=ts;
+  if(playing){
+    t += dt * speedMult * (reversed ? -1 : 1);
+    renderFrame(mainCtx,PIECES[currentIdx],t,RES);
+  }
+  document.getElementById('tDisplay').textContent='T:'+t.toFixed(3);
+  requestAnimationFrame(animate);
+}
+
+// ═══════════════════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════════════════
+document.getElementById('btnPlay').onclick=function(){
+  playing=!playing;
+  const icon=this.querySelector('.btn-icon');
+  const label=document.getElementById('playLabel');
+  if(playing){
+    icon.textContent='⏸'; label.textContent='PAUSE';
+    this.classList.add('active');
+    lastTimestamp=null;
+  } else {
+    icon.textContent='▶'; label.textContent='PLAY';
+    this.classList.remove('active');
+  }
+};
+
+document.getElementById('btnReverse').onclick=function(){
+  reversed=!reversed;
+  this.classList.toggle('active', reversed);
+  const icon=this.querySelector('.btn-icon');
+  const label=document.getElementById('revLabel');
+  icon.textContent=reversed?'◀':'⟳';
+  label.textContent=reversed?'FORWARD':'REVERSE';
+  updateDirectionIndicator();
+  // Auto-play on reverse toggle
+  if(!playing){
+    playing=true;
+    lastTimestamp=null;
+    const playBtn=document.getElementById('btnPlay');
+    playBtn.querySelector('.btn-icon').textContent='⏸';
+    document.getElementById('playLabel').textContent='PAUSE';
+    playBtn.classList.add('active');
+  }
+};
+
+document.getElementById('btnReset').onclick=function(){
+  t=0;
+  reversed=false;
+  document.getElementById('btnReverse').classList.remove('active');
+  document.getElementById('btnReverse').querySelector('.btn-icon').textContent='⟳';
+  document.getElementById('revLabel').textContent='REVERSE';
+  updateDirectionIndicator();
+  if(!playing) renderFrame(mainCtx,PIECES[currentIdx],t,RES);
+};
+
+document.getElementById('btnPrev').onclick=()=>selectPiece((currentIdx-1+PIECES.length)%PIECES.length);
+document.getElementById('btnNext').onclick=()=>selectPiece((currentIdx+1)%PIECES.length);
+
+document.getElementById('speedSlider').oninput=function(){
+  speedMult=this.value/100;
+  document.getElementById('speedVal').textContent=this.value+'%';
+};
+
+document.getElementById('brightSlider').oninput=function(){
+  brightness=this.value/100;
+  document.getElementById('brightVal').textContent=this.value+'%';
+};
+
+// Quality selector
+document.querySelectorAll('.qual-btn').forEach(btn=>{
+  btn.addEventListener('click', function(){
+    const newRes = parseInt(this.dataset.res);
+    RES = newRes;
+    mainCanvas.width = newRes;
+    mainCanvas.height = newRes;
+    document.querySelectorAll('.qual-btn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    const note = document.getElementById('renderNote');
+    if(newRes >= 1200) { note.textContent = '⚠ ULTRA may slow on older devices'; note.style.color='var(--accent4)'; }
+    else if(newRes >= 900) { note.textContent = '✓ HIGH — best quality/speed balance'; note.style.color='var(--accent3)'; }
+    else if(newRes >= 600) { note.textContent = '✓ MED — smooth on all devices'; note.style.color='var(--accent3)'; }
+    else { note.textContent = '✓ LOW — fastest performance'; note.style.color='var(--text-dim)'; }
+    if(!playing) renderFrame(mainCtx, PIECES[currentIdx], t, RES);
+  });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  switch(e.key){
+    case ' ': e.preventDefault(); document.getElementById('btnPlay').click(); break;
+    case 'ArrowLeft': document.getElementById('btnPrev').click(); break;
+    case 'ArrowRight': document.getElementById('btnNext').click(); break;
+    case 'r': case 'R': document.getElementById('btnReverse').click(); break;
+    case 'Escape': document.getElementById('btnReset').click(); break;
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// CODE DISPLAY
+// ═══════════════════════════════════════════════════════
+function syntaxHL(code){
+  return code
+    .replace(/\/\/.*/g, m=>'<span class="cm">'+m+'</span>')
+    .replace(/\b(const|let|var|function|return|for|of|Math|new|this|if|else)\b/g, m=>'<span class="kw">'+m+'</span>')
+    .replace(/\b(Math\.\w+)\b/g, m=>'<span class="fn">'+m+'</span>')
+    .replace(/-?\d+\.?\d*/g, m=>'<span class="num">'+m+'</span>')
+    .replace(/"[^"]*"/g, m=>'<span class="str">'+m+'</span>');
+}
+
+function showCode(idx){
+  const p=PIECES[idx];
+  const code='// PIECE '+String(idx+1).padStart(2,'0')+' — '+p.name+'\n// Palette: '+p.palette+'\n// Frequencies: ['+p.freqs.join(', ')+']\n\nconst piece = {\n  name: "'+p.name+'",\n  palette: "'+p.palette+'",\n  freqs: ['+p.freqs.join(', ')+'],\n  field: '+p.field.toString()+'\n};\n\n// ─── PALETTE ───\nconst palette_'+p.palette+' = '+PALETTES[p.palette].toString()+';\n\n// ─── RENDER (use in requestAnimationFrame) ───\nfunction renderFrame(ctx, t, reversed) {\n  const W=780, H=780, EXTENT=2.2;\n  const imgData=ctx.createImageData(W, H);\n  const vals=new Float32Array(W*H);\n  for(let py=0;py<H;py++){\n    for(let px=0;px<W;px++){\n      const x=(px/(W-1))*2*EXTENT-EXTENT;\n      const y=(py/(H-1))*2*EXTENT-EXTENT;\n      vals[py*W+px]=piece.field(x,y,t*(reversed?-1:1));\n    }\n  }\n  // Apply multiBand colorization...\n}';
+  document.getElementById('codeBlock').innerHTML=syntaxHL(code);
+}
+
+function copyCode(){
+  const text=document.getElementById('codeBlock').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✓ COPIED';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='COPY CODE';btn.classList.remove('copied');},2000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+buildGallery();
+showCode(0);
+document.getElementById('stageName').textContent=PIECES[0].name;
+document.getElementById('stageNum').textContent='01 / '+PIECES.length;
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
